@@ -24,6 +24,11 @@ and **flexible ingestion** (bring your data however it is). See `references/line
 
 Then run `/promptfit` and point it at a folder of labeled examples.
 
+## Example run
+
+See [`docs/sample-run.md`](docs/sample-run.md) for an end-to-end run on the bundled `examples/`
+dataset — the score trajectory (0.875 → 1.0), what the optimizer learned, and the trained prompt.
+
 ## Requirements
 
 Core path needs only Claude Code. Deterministic scoring uses the ambient Python 3 (stdlib only);
