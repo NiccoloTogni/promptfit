@@ -39,6 +39,11 @@ accepted candidate's `score_after` becomes the next `score_current`. A rejected 
 
 **A rejected iteration must never overwrite a saved `prompt_v*.md`.**
 
+**Outputs hygiene:** clear `outputs/` at the start of every iteration before writing the candidate's
+predictions, so a stale file from a prior iteration is never silently rescored. `score.py` requires a
+flat, id-keyed `gold/` + `outputs/` layout (stems = example ids) — see `references/evaluators.md`, and
+always check its reported `n`/`warnings` before trusting the mean.
+
 ## Optimizer output parsing
 Parse `<optimized_prompt>`, `<learnings>`, `<issues>`. If `<optimized_prompt>` is missing/empty, keep
 the previous version, log the malformation, and retry the optimizer once. If `<issues>` is "None",

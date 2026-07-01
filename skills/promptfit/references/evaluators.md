@@ -15,14 +15,28 @@ Always state the pick and let the user override.
 
 ## Deterministic evaluators (`exact`, `json_field`, `token_f1`)
 
-Copy `score.py` (bundled next to this file) into the project dir. Each iteration:
-- write model outputs to `outputs/` (stems matching the expected files),
-- run: `python3 score.py --mode <mode> --pred outputs/ --gold <expected_dir>`,
-- read the printed JSON's `mean` as the score, and `per_example` to see which cases fail
-  (feed failing cases into the next optimizer step as evaluation feedback).
+Copy `score.py` (bundled next to this file) into the project dir.
 
-`json_field` = fraction of gold top-level keys whose value matches. `token_f1` = multiset token F1.
-These are exact and reproducible — do NOT eyeball matches when a deterministic mode applies.
+**One-time: build a flat, id-keyed gold directory.** `score.py` matches predictions to gold by
+FILENAME STEM, and the stem IS the example id. It reads only flat files (subdirectories are ignored).
+So whatever the ingestion layout was (one subdir per example, parallel folders, JSONL/CSV, a table),
+first materialize a flat `gold/` dir with one file per example named `<id>.<ext>` (e.g.
+`gold/ex04.json`), using the split ids as the stems.
+
+Each iteration:
+- **clear `outputs/` first** — a stale file from a prior iteration would otherwise be silently rescored,
+- write this candidate's outputs to `outputs/<id>.<ext>`, stems matching the gold files,
+- run: `python3 score.py --mode <mode> --pred outputs/ --gold gold/`,
+- **check `n` and `warnings` before trusting `mean`** — `n` must equal the number of eval examples and
+  `warnings` must be empty. A non-empty `warnings` (or a surprisingly small `n`) means the directories
+  didn't line up, not that the prompt is good or bad — fix the layout and re-run.
+- read `mean` as the score, and `per_example` to see which cases fail (feed failing cases into the next
+  optimizer step as evaluation feedback).
+
+`json_field` = fraction of gold top-level keys whose value matches (it does NOT penalize extra keys the
+prediction adds beyond the gold ones). `token_f1` = multiset token F1 over whitespace-split tokens (so
+it is case- and punctuation-sensitive). `exact` = full-string match after trimming. These are exact and
+reproducible — do NOT eyeball matches when a deterministic mode applies.
 
 If Python 3 is unavailable, score inline yourself using the SAME definitions, and tell the user this
 run is less reproducible.

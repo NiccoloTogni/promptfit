@@ -6,14 +6,19 @@ Usage:
     python3 score.py --mode exact      --pred outputs/ --gold expected/
     python3 score.py --mode token_f1   --pred outputs/ --gold expected/
 
-Files are matched by stem (e.g. outputs/ex04.txt <-> expected/ex04.json). Prints a JSON summary:
-{"mode":..., "mean": <float 0..1>, "n": <int>, "per_example": {stem: score, ...}}
-Exit code 0 always (scoring is not a failure); parse issues yield score 0 for that item.
+Both --pred and --gold must be FLAT directories whose files are matched by stem — the stem IS the
+example id (e.g. outputs/ex04.txt <-> expected/ex04.json). Subdirectories are ignored; if your data
+is one-subdir-per-example, flatten it into id-keyed files first (see references/evaluators.md).
+
+Prints a JSON summary to stdout:
+{"mode":..., "mean": <float 0..1>, "n": <int>, "per_example": {stem: score, ...}, "warnings": [...]}
+"warnings" is non-empty when the match looks suspicious (ignored subdirs, missing preds, n=0); those
+same warnings are also printed to stderr. Read them before trusting "mean".
+Exit code 0 always (scoring is not a failure); an unreadable or unparseable item yields score 0.
 """
 import argparse
 import json
 import sys
-from difflib import SequenceMatcher
 from pathlib import Path
 
 
@@ -75,8 +80,24 @@ def main() -> int:
     args = ap.parse_args()
 
     scorer = SCORERS[args.mode]
-    gold_by_stem = {p.stem: p for p in Path(args.gold).glob("*") if p.is_file()}
-    pred_by_stem = {p.stem: p for p in Path(args.pred).glob("*") if p.is_file()}
+    gold_dir, pred_dir = Path(args.gold), Path(args.pred)
+    gold_by_stem = {p.stem: p for p in gold_dir.glob("*") if p.is_file()}
+    pred_by_stem = {p.stem: p for p in pred_dir.glob("*") if p.is_file()}
+
+    # Guard against silently scoring the wrong thing (e.g. a subdir-per-example dataset
+    # pointed at directly, which matches 0 real examples yet would otherwise look like a clean run).
+    warnings = []
+    ignored_subdirs = [p.name for p in gold_dir.glob("*") if p.is_dir()]
+    if ignored_subdirs:
+        warnings.append(
+            f"{len(ignored_subdirs)} subdirectory(ies) in --gold were ignored; score.py compares "
+            "FLAT id-keyed files (e.g. gold/ex04.json). Flatten the dataset before scoring."
+        )
+    missing = sorted(s for s in gold_by_stem if s not in pred_by_stem)
+    if missing:
+        warnings.append(f"{len(missing)} gold example(s) had no matching --pred file (scored 0): {missing[:10]}")
+    if not gold_by_stem:
+        warnings.append("no gold files matched (n=0); check the --gold path and layout.")
 
     per = {}
     for stem, gpath in sorted(gold_by_stem.items()):
@@ -84,10 +105,16 @@ def main() -> int:
         if ppath is None:
             per[stem] = 0.0
             continue
-        per[stem] = round(scorer(_load(ppath), _load(gpath)), 4)
+        try:
+            per[stem] = round(scorer(_load(ppath), _load(gpath)), 4)
+        except (OSError, UnicodeDecodeError):
+            # honor the module contract: an unreadable item scores 0, never crashes the run
+            per[stem] = 0.0
 
     mean = round(sum(per.values()) / len(per), 4) if per else 0.0
-    print(json.dumps({"mode": args.mode, "mean": mean, "n": len(per), "per_example": per}))
+    for w in warnings:
+        print(f"WARNING: {w}", file=sys.stderr)
+    print(json.dumps({"mode": args.mode, "mean": mean, "n": len(per), "per_example": per, "warnings": warnings}))
     return 0
 
 

@@ -38,7 +38,9 @@ Apply the adaptive, seeded split in `references/loop-spec.md`; write `split.json
 
 ### 4. Pick the evaluator
 Auto-detect per `references/evaluators.md`; state the choice; let the user override. For deterministic
-modes, copy `references/score.py` into the project. For `llm_judge`, write `rubric.md`.
+modes, copy `references/score.py` into the project and build the flat, id-keyed `gold/` directory it
+requires (see `references/evaluators.md` — `score.py` ignores subdirectories and matches by filename
+stem). For `llm_judge`, write `rubric.md`.
 
 ### 5. Pre-flight cost estimate
 Compute and show `example_runs` and `est_tokens` from `references/loop-spec.md`. If over the budget
