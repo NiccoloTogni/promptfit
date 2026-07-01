@@ -1,0 +1,8 @@
+{
+  "name": "promptfit",
+  "version": "0.1.0",
+  "description": "Fit a portable system prompt to your labeled input→output examples via an iterative ML loop — train/val/test split, eval-scored accept/reject, early stopping.",
+  "author": { "name": "Toni" },
+  "homepage": "https://github.com/NiccoloTogni/promptfit",
+  "keywords": ["prompt-optimization", "prompt-engineering", "evals", "distillation", "skill"]
+}
