@@ -1,0 +1,7 @@
+{
+  "name": "promptfit",
+  "owner": { "name": "Toni" },
+  "plugins": [
+    { "name": "promptfit", "source": "./" }
+  ]
+}
