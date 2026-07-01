@@ -1,5 +1,14 @@
 # PromptFit Skill Implementation Plan
 
+> **STATUS — Implemented & merged to `main` (2026-07-01).** All 11 tasks were built; a review-driven
+> hardening pass then changed several files. The verbatim file blocks below reflect the **original
+> plan**, not the final shipped state — for current content read the files under `skills/promptfit/`
+> and `scripts/`, and `docs/design.md` (reconciled). Post-plan changes: added
+> `.claude-plugin/marketplace.json`; `score.py` gained a `warnings` array + graceful per-item
+> degradation and dropped the unused `SequenceMatcher` import; the deterministic path now uses a flat,
+> id-keyed `gold/` + `outputs/` layout cleared each iteration; `evaluators.md` / `loop-spec.md` /
+> `SKILL.md` / `validate.sh` were expanded to match.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build `promptfit`, a Claude Code plugin whose skill trains a portable, provider-agnostic system prompt from labeled input→output examples via an ML-style loop (train/val/test, eval-scored accept/reject, early stopping), running Claude-native with no install.
@@ -17,6 +26,7 @@
 ```
 promptfit/
 ├── .claude-plugin/plugin.json          # Task 1 — plugin manifest
+├── .claude-plugin/marketplace.json     # (post-plan) marketplace catalog for /plugin marketplace add
 ├── README.md                           # Task 2 — what it is + install
 ├── examples/
 │   ├── README.md                       # Task 3 — dataset description + schema
@@ -204,6 +214,10 @@ outputs and a directory of expected outputs (matched by filename stem) and print
 [0,1] plus per-example detail. Supports `exact`, `json_field`, `token_f1`.
 
 - [ ] **Step 1: Write `score.py`**
+
+> ⚠️ **Superseded post-implementation** — the shipped `skills/promptfit/references/score.py` adds a
+> `warnings` array + graceful per-item degradation and drops the `SequenceMatcher` import. Treat the
+> shipped file as source of truth; the block below is the original plan.
 
 ```python
 #!/usr/bin/env python3
@@ -776,6 +790,10 @@ git commit -m "feat: complete SKILL.md guided workflow"
 - Create: `scripts/validate.sh`
 
 - [ ] **Step 1: Write `scripts/validate.sh`**
+
+> ⚠️ **Superseded post-implementation** — the shipped `scripts/validate.sh` also validates
+> `marketplace.json`, adds a `trap` cleanup, a partial-credit assertion, and a subdir-guard regression
+> test. Treat the shipped file as source of truth.
 
 ```bash
 #!/usr/bin/env bash

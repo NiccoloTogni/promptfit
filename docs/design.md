@@ -1,10 +1,31 @@
 # PromptFit — Design Spec
 
 - **Date:** 2026-07-01
-- **Status:** Approved (design) — pending written-spec review
+- **Status:** Implemented & merged to `main` (2026-07-01). Reconciled with the shipped plugin — see
+  "Implementation reconciliation" below.
 - **Author:** Toni (with Claude)
 - **Naming:** the **skill** is **PromptFit** (`/promptfit`). The **library** it optionally graduates
   to is **prompt-forge** (a separate existing Python package). Keep the two distinct throughout.
+
+## Implementation reconciliation (2026-07-01)
+
+The plugin was built from `docs/plan.md` and merged to `main`. A review-driven hardening pass then
+changed a few behaviors from this original spec. Where this document and the shipped files under
+`skills/promptfit/` + `scripts/` disagree, **the shipped files win**; the notes below are folded into
+the sections that follow.
+
+- **`marketplace.json` added.** A `.claude-plugin/marketplace.json` catalog ships so `/plugin
+  marketplace add <repo>` + `/plugin install` work. (Publishing to a public registry is still out of
+  scope — see Non-goals.)
+- **Deterministic scoring is a flat, id-keyed contract.** `score.py` matches predictions to gold by
+  filename **stem = example id** and reads only flat files (subdirectories are ignored). The workflow
+  materializes a flat `gold/` dir and writes `outputs/<id>.<ext>`, clearing `outputs/` each iteration.
+  `score.py` reports a `warnings` array (stdout + stderr) on ignored subdirs / missing preds / `n=0`
+  and scores an unreadable item `0` instead of crashing — so a layout mismatch can't be mistaken for a
+  perfect score. Read `n`/`warnings` before trusting `mean`.
+- **`evaluator.md` deliverable dropped.** The chosen evaluator is recorded via the copied `score.py`
+  (deterministic) or `rubric.md` (judge) plus the `gold/` dir — there is no separate `evaluator.md`
+  file. The ingested data is referenced in place, not necessarily copied into the project dir.
 
 ## Summary
 
@@ -39,7 +60,9 @@ is baked into the skill (see Positioning).
 - A multi-command/power-user toolkit surface (single guided workflow only).
 - Automated detection of, or code-gen hand-off to, the prompt-forge library (explicitly cut — see
   "Library on-ramp").
-- Marketplace publishing mechanics (the repo is plugin-ready; publishing is out of scope for v1).
+- Publishing to a public marketplace registry (the repo is plugin-ready and ships a
+  `.claude-plugin/marketplace.json` so `/plugin marketplace add <repo>` works; registry publishing is
+  out of scope for v1).
 
 ## Positioning / prior art (baked into the skill as `lineage.md`)
 
@@ -68,7 +91,8 @@ Stated plainly to the user (3-line summary at step 0) and written into each proj
 ```
 promptfit/                              # standalone, independently installable
 ├── .claude-plugin/
-│   └── plugin.json                     # manifest: name, version, description, author
+│   ├── plugin.json                     # plugin manifest: name, version, description, author
+│   └── marketplace.json                # marketplace catalog so `/plugin marketplace add` works
 ├── skills/
 │   └── promptfit/
 │       ├── SKILL.md                    # entry: trigger + guided workflow
@@ -76,8 +100,11 @@ promptfit/                              # standalone, independently installable
 │           ├── optimizer-prompt.md     # the "PE agent" prompt (learnings/issues, additive)
 │           ├── evaluators.md           # exact / JSON-field / token-F1 / LLM-judge recipes
 │           ├── loop-spec.md            # exact loop: split, accept/reject, patience, carry-forward
-│           └── lineage.md              # prior art + differentiation + "when to graduate"
-├── examples/                           # bundled smoke-test dataset (~12 labeled examples)
+│           ├── lineage.md              # prior art + differentiation + "when to graduate"
+│           └── score.py                # stdlib deterministic scorer (copied into each project)
+├── examples/                           # bundled smoke-test dataset (12 labeled examples)
+├── scripts/
+│   └── validate.sh                     # repo self-check (no LLM loop)
 ├── docs/
 │   └── design.md                       # this spec
 └── README.md                           # what it is + install
@@ -125,8 +152,12 @@ Each iteration has two halves, handled differently:
 - **Inference** (run the candidate prompt on inputs → outputs): **always Claude-native, in-context.**
   No API key, no code. Outputs written to `outputs/`. This is the token cost driver.
 - **Scoring** (outputs vs expected):
-  - **Deterministic** (exact / JSON-field / numeric / token-F1): generate a small **stdlib `score.py`
-    once** at setup; run it via Bash each iteration. Reproducible, cheap, exact.
+  - **Deterministic** (exact / JSON-field / token-F1): copy the stdlib **`score.py`** into the project
+    at setup and run it via Bash each iteration. It matches predictions to gold by filename **stem =
+    example id** over **flat** dirs (subdirs ignored), so build a flat `gold/` dir and write
+    `outputs/<id>.<ext>`, clearing `outputs/` each iteration. It reports `mean`, `per_example`, and a
+    `warnings` array (ignored subdirs / missing preds / `n=0`) and scores unreadable items `0` rather
+    than crashing — check `n`/`warnings` before trusting `mean`. Reproducible, cheap, exact.
   - **LLM-as-judge** (open-ended/semantic): **Claude is the judge**, scoring against a written
     `rubric.md` for cross-iteration consistency. No code; costs tokens.
 - "No install" = no pip packages and no external API key, but the ambient Python/bash of the Claude
@@ -189,11 +220,11 @@ the trained prompt on a fresh input immediately as a final check.
 <project>/
 ├── context.md            # task/domain context
 ├── LINEAGE.md            # provenance: method, prior art, differentiation (from lineage.md)
-├── examples/             # (or a reference to the user's data) the ingested labeled examples
 ├── split.json            # train/val/test IDs + seed
-├── evaluator.md          # chosen evaluator + config; plus score.py or rubric.md
+├── score.py / rubric.md  # chosen evaluator: copied score.py (deterministic) or rubric.md (judge)
+├── gold/                 # flat, id-keyed expected outputs (<id>.<ext>) for deterministic scoring
 ├── prompt_v0.md … prompt_vN.md   # version history (accepted versions only)
-├── outputs/              # per-iteration model outputs (for scoring/repro)
+├── outputs/              # per-iteration model outputs (cleared each iteration; for scoring/repro)
 ├── training_log.md       # per-iteration learnings, issues, scores, batch IDs, accept/reject
 └── report.md             # summary: best version, score trajectory, test score, open issues
 ```
@@ -207,6 +238,8 @@ the trained prompt on a fresh input immediately as a final check.
 - **loop-spec.md** — the exact loop above (split, accept/reject, carry-forward, patience, consolidation),
   defaults, and the pre-flight cost formula.
 - **lineage.md** — the Positioning section, plus "when to graduate — and to what."
+- **score.py** — stdlib deterministic scorer (`exact` / `json_field` / `token_f1`); flat id-keyed
+  pred/gold matching, `warnings` output + graceful per-item degradation. Copied into each project.
 
 ## Error handling & edge cases
 
@@ -215,6 +248,9 @@ the trained prompt on a fresh input immediately as a final check.
 - Malformed optimizer output (missing rewritten prompt) → keep previous version, log, retry once.
 - No accepted improvement for `patience` iterations → early stop; report best-so-far honestly.
 - Python absent → deterministic scoring falls back to careful inline scoring, flagged.
+- Deterministic scoring layout mismatch (unflattened data, missing/extra files) → `score.py` emits
+  `warnings` + a small `n`, never silently reporting success. Unreadable output file → that item scores
+  `0`, run continues (exit 0).
 - Estimate over budget → pre-flight warning with adjustment options + graduate pointer.
 - Rejected iterations must never overwrite the best version.
 
