@@ -7,7 +7,7 @@ prompt is the deliverable — a plain text file you can paste into any provider.
 
 Runs **Claude-native**: no Python package and no API key for the core path. For very large jobs,
 binary inputs, RAG-matched eval, or DB storage, graduate to the [prompt-forge](https://github.com/NiccoloTogni/prompt-forge)
-library or DSPy/GEPA (see `skills/promptfit/references/lineage.md`).
+library (`pip install prompt-forge-ml`) or DSPy/GEPA (see `skills/promptfit/references/lineage.md`).
 
 ## What makes it different
 

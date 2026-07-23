@@ -63,5 +63,5 @@ Estimate `avg_example_tokens` as chars/4 over the loaded examples. Show `example
 
 **Budget trigger (default = token estimate):** if `est_tokens > 1_000_000` (user-overridable), warn and
 offer: reduce val size, fewer iterations, switch to a deterministic evaluator, or **graduate** to the
-prompt-forge library / DSPy / GEPA (see `lineage.md`). This is the only place the graduate pointer
-fires at runtime. Proceed only after the user confirms.
+prompt-forge library (`pip install prompt-forge-ml`) / DSPy / GEPA (see `lineage.md`). This is the only
+place the graduate pointer fires at runtime. Proceed only after the user confirms.

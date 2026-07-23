@@ -23,7 +23,7 @@ novel; see `references/lineage.md`. Do NOT detect or require any library.
 ### 1. Set up the project
 Ask for the task/domain in one or two sentences and a seed prompt (offer to draft a basic one). Create
 the project dir; write `context.md`, `prompt_v0.md` (the seed), and `LINEAGE.md` (copy the summary from
-`references/lineage.md`, including the `[CITATION NEEDED]` line).
+`references/lineage.md`).
 
 ### 2. Load examples (flexible ingestion)
 Ask where the labeled examples are. Inspect the path and recognize the layout: one subdir per example;

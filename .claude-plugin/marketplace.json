@@ -1,7 +1,12 @@
 {
   "name": "promptfit",
-  "owner": { "name": "Toni" },
+  "owner": {
+    "name": "Niccolò Togni"
+  },
   "plugins": [
-    { "name": "promptfit", "source": "./" }
+    {
+      "name": "promptfit",
+      "source": "./"
+    }
   ]
 }
