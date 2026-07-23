@@ -11,7 +11,13 @@ new method** — it is a member of a well-established family.
 - **DSPy / MIPROv2** — the Bayesian-optimization cousin (Optuna TPE over instructions + demos).
 - **PLD (Prompt-Level Distillation)** — distills a teacher into the *system prompt* vs weights; the
   academic twin of "the prompt is the model."
-- The 2025 paper PromptForge was based on: **[CITATION NEEDED — fill in]**.
+- The 2025 paper prompt-forge was based on: **Chen, L.-C., Weng, H.-T., Pardeshi, M. S., Chen, C.-M.,
+  Sheu, R.-K., & Pai, K.-C. (2025). "Evaluation of Prompt Engineering on the Performance of a Large
+  Language Model in Document Information Extraction." *Electronics*, 14(11), 2145.
+  [doi:10.3390/electronics14112145](https://doi.org/10.3390/electronics14112145)** — key information
+  extraction from scanned receipts (SROIE) and shipping invoices via **APE** (Automatic Prompt
+  Engineer): labeled input→output pairs fed to an LLM that generates and selects the extraction
+  prompt, no fine-tuning. prompt-forge generalizes this into an iterative, eval-gated training loop.
 
 **Already-occupied niches.** Anthropic's first-party `skill-creator` (Improve mode), plus GEPA /
 Microsoft SkillOpt / community `prompt-optimizer` skills — all optimize *an agent's own `skill.md`*.
